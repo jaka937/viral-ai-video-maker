@@ -1,0 +1,94 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Viral AI Video Maker</title>
+<style>
+body {
+  background: #101827;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  padding: 30px;
+}
+.container {
+  max-width: 600px;
+  margin: auto;
+  background: #1e293b;
+  padding: 25px;
+  border-radius: 18px;
+}
+textarea {
+  width: 95%;
+  height: 120px;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 16px;
+}
+button {
+  background: #8b5cf6;
+  color: white;
+  padding: 14px 25px;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-top: 15px;
+  font-size: 16px;
+}
+#result {
+  margin-top: 20px;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🎬 Viral AI Video Maker</h1>
+<p>Create your next viral video idea!</p >
+
+<textarea id="idea" placeholder="Write your video idea..."></textarea>
+
+<br>
+<button onclick="generate()">Generate Script</button>
+
+<div id="result"></div>
+</div>
+
+<script>
+function generate() {
+  const idea = document.getElementById("idea").value.trim();
+
+  if (!idea) {
+    alert("Please enter a video idea!");
+    return;
+  }
+
+  const script =
+`🎬 VIDEO IDEA: ${idea}
+
+SCENE 1 (0-5 sec):
+Show a surprising opening.
+
+SCENE 2 (5-15 sec):
+Make the situation funny and unexpected.
+
+SCENE 3 (15-25 sec):
+Add an absurd twist.
+
+ENDING (25-30 sec):
+Finish with a funny surprise!
+
+TITLE:
+You Won't Believe What Happens!
+
+HASHTAGS:
+#AI #Funny #Shorts #Viral`;
+
+  document.getElementById("result").innerText = script;
+}
+</script>
+</body>
+</html>
