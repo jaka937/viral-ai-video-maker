@@ -6,88 +6,135 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Viral AI Video Maker</title>
 <style>
-body {
-  background: #101827;
-  color: white;
-  font-family: Arial, sans-serif;
-  text-align: center;
-  padding: 30px;
-}
-.container {
-  max-width: 600px;
-  margin: auto;
-  background: #1e293b;
-  padding: 25px;
-  border-radius: 18px;
-}
-textarea {
-  width: 95%;
-  height: 120px;
-  padding: 12px;
-  border-radius: 10px;
-  font-size: 16px;
-}
-button {
-  background: #8b5cf6;
-  color: white;
-  padding: 14px 25px;
-  border: 0;
-  border-radius: 10px;
-  cursor: pointer;
-  margin-top: 15px;
-  font-size: 16px;
-}
-#result {
-  margin-top: 20px;
-  white-space: pre-wrap;
-  line-height: 1.6;
-}
+*{box-sizing:border-box}
+body{margin:0;background:#10111b;color:white;font-family:Arial,sans-serif;padding:25px}
+main{max-width:850px;margin:auto}
+h1{color:#a78bfa}
+p{color:#b8b8ca}
+.panel{background:#1c1d2c;padding:22px;border-radius:15px;margin:18px 0}
+textarea{width:100%;height:100px;background:#292a3c;color:white;border:1px solid #555;border-radius:9px;padding:12px;font-size:16px}
+button{background:#8255ef;color:white;border:0;padding:13px 19px;border-radius:9px;margin:7px 4px 0 0;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.5}
+canvas{width:100%;background:#080812;border-radius:12px;margin-top:15px}
+.scene{padding:12px;background:#292a3c;margin:8px 0;border-radius:8px}
+#status{color:#a78bfa}
 </style>
 </head>
 <body>
-<div class="container">
-<h1>🎬 Viral AI Video Maker</h1>
-<p>Create your next viral video idea!</p >
+<main>
+<h1>🎬 VIRAL AI VIDEO MAKER</h1>
+<p>Create your own 30-second viral videos.</p >
 
-<textarea id="idea" placeholder="Write your video idea..."></textarea>
-
+<div class="panel">
+<h3>1. Enter your video idea</h3>
+<textarea id="idea" placeholder="A zombie girl wakes up in a strange city..."></textarea>
 <br>
-<button onclick="generate()">Generate Script</button>
-
-<div id="result"></div>
+<button onclick="makeScenes()">Generate 6 scenes</button>
 </div>
 
+<div class="panel">
+<h3>2. Your storyboard</h3>
+<div id="scenes">Your scenes will appear here.</div>
+</div>
+
+<div class="panel">
+<h3>3. Video preview</h3>
+<canvas id="video" width="720" height="1280"></canvas>
+<br>
+<button id="create" onclick="createVideo()" disabled>Create 30-second video</button>
+<p id="status">Waiting for your idea...</p >
+<a id="download"></a >
+</div>
+</main>
+
 <script>
-function generate() {
-  const idea = document.getElementById("idea").value.trim();
+let story=[];
+const canvas=document.getElementById("video");
+const ctx=canvas.getContext("2d");
 
-  if (!idea) {
-    alert("Please enter a video idea!");
-    return;
-  }
+function makeScenes(){
+ const idea=document.getElementById("idea").value.trim();
+ if(!idea){alert("Enter your idea first!");return}
+ const titles=[
+ "Something strange is happening...",
+ "Nobody expected this.",
+ "But suddenly everything changed.",
+ "The biggest surprise was coming.",
+ "Wait... WHAT?!",
+ "You won't believe the ending!"
+ ];
+ story=titles.map((title,i)=>({
+  title,
+  detail:i===0?idea:"The story gets crazier...",
+  color:i%2===0?"#37205d":"#142d50"
+ }));
+ document.getElementById("scenes").innerHTML=story.map((s,i)=>
+ `<div class="scene"><b>Scene ${i+1}</b><br>${s.title}<br><small>${s.detail}</small></div>`
+ ).join("");
+ document.getElementById("create").disabled=false;
+ document.getElementById("status").textContent="6 scenes ready!";
+ draw(0);
+}
 
-  const script =
-`🎬 VIDEO IDEA: ${idea}
+function draw(index){
+ const s=story[index];
+ const g=ctx.createLinearGradient(0,0,720,1280);
+ g.addColorStop(0,s.color);
+ g.addColorStop(1,"#090914");
+ ctx.fillStyle=g;
+ ctx.fillRect(0,0,720,1280);
+ ctx.fillStyle="white";
+ ctx.textAlign="center";
+ ctx.font="bold 27px Arial";
+ ctx.fillText("VIRAL AI STORIES",360,100);
+ ctx.font="bold 55px Arial";
+ const words=s.title.split(" ");
+ let lines=[],line="";
+ words.forEach(w=>{
+  if(ctx.measureText(line+" "+w).width>600){
+   lines.push(line);line=w;
+  }else line+=(line?" ":"")+w;
+ });
+ if(line)lines.push(line);
+ lines.forEach((l,i)=>ctx.fillText(l,360,540+i*75));
+ ctx.font="25px Arial";
+ ctx.fillStyle="#c4b5fd";
+ ctx.fillText("SCENE "+(index+1)+" / 6",360,1100);
+ ctx.fillStyle="#fff";
+ ctx.fillRect(60,1170,600,8);
+ ctx.fillStyle="#a78bfa";
+ ctx.fillRect(60,1170,600*(index+1)/6,8);
+}
 
-SCENE 1 (0-5 sec):
-Show a surprising opening.
-
-SCENE 2 (5-15 sec):
-Make the situation funny and unexpected.
-
-SCENE 3 (15-25 sec):
-Add an absurd twist.
-
-ENDING (25-30 sec):
-Finish with a funny surprise!
-
-TITLE:
-You Won't Believe What Happens!
-
-HASHTAGS:
-#AI #Funny #Shorts #Viral`;
-
-  document.getElementById("result").innerText = script;
+async function createVideo(){
+ if(!story.length)return;
+ const button=document.getElementById("create");
+ button.disabled=true;
+ document.getElementById("download").textContent="";
+ const stream=canvas.captureStream(30);
+ let recorder=new MediaRecorder(stream,{mimeType:"video/webm"});
+ let chunks=[];
+ recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+ recorder.onstop=()=>{
+  const blob=new Blob(chunks,{type:"video/webm"});
+  const url=URL.createObjectURL(blob);
+  const a=document.getElementById("download");
+  a.href=url;
+  a.download="viral-video.webm";
+  a.textContent="⬇ Download your video";
+  a.style.display="inline-block";
+  a.style.color="#c4b5fd";
+  document.getElementById("status").textContent="Video completed!";
+  button.disabled=false;
+  stream.getTracks().forEach(t=>t.stop());
+ };
+ recorder.start();
+ for(let i=0;i<6;i++){
+  draw(i);
+  document.getElementById("status").textContent="Creating scene "+(i+1)+" of 6...";
+  await new Promise(r=>setTimeout(r,5000));
+ }
+ recorder.stop();
 }
 </script>
 </body>
