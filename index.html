@@ -3,138 +3,170 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Viral AI Video Maker</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#10111b;color:white;font-family:Arial,sans-serif;padding:25px}
+body{margin:0;padding:24px;background:#10101a;color:white;font-family:Arial,sans-serif}
 main{max-width:850px;margin:auto}
-h1{color:#a78bfa}
-p{color:#b8b8ca}
-.panel{background:#1c1d2c;padding:22px;border-radius:15px;margin:18px 0}
-textarea{width:100%;height:100px;background:#292a3c;color:white;border:1px solid #555;border-radius:9px;padding:12px;font-size:16px}
-button{background:#8255ef;color:white;border:0;padding:13px 19px;border-radius:9px;margin:7px 4px 0 0;font-weight:bold;cursor:pointer}
-button:disabled{opacity:.5}
-canvas{width:100%;background:#080812;border-radius:12px;margin-top:15px}
-.scene{padding:12px;background:#292a3c;margin:8px 0;border-radius:8px}
-#status{color:#a78bfa}
+h1{color:#b69aff}
+textarea,select,input{width:100%;padding:14px;margin:8px 0 16px;border:1px solid #444;border-radius:10px;background:#202033;color:white;font-size:16px}
+button{padding:13px 18px;margin:5px;border:0;border-radius:10px;background:#8757ed;color:white;font-weight:bold;cursor:pointer}
+button.secondary{background:#333}
+.scene{background:#202033;padding:15px;margin:12px 0;border-radius:12px}
+#screen{background:#080812;border:1px solid #555;border-radius:12px;aspect-ratio:9/16;max-height:480px;display:flex;align-items:center;justify-content:center;text-align:center;padding:25px;font-size:25px}
+small{color:#aaa}
 </style>
 </head>
 <body>
 <main>
-<h1>🎬 VIRAL AI VIDEO MAKER</h1>
-<p>Create your own 30-second viral videos.</p >
+<h1>🎬 Viral AI Video Maker</h1>
+<p>Create stories, voiceovers and short videos.</p >
 
-<div class="panel">
-<h3>1. Enter your video idea</h3>
-<textarea id="idea" placeholder="A zombie girl wakes up in a strange city..."></textarea>
-<br>
-<button onclick="makeScenes()">Generate 6 scenes</button>
-</div>
+<label>🌍 Choose language / Dil seç</label>
+<select id="language">
+<option value="en-US">🇬🇧 English</option>
+<option value="tr-TR">🇹🇷 Türkçe</option>
+<option value="ru-RU">🇷🇺 Русский</option>
+</select>
 
-<div class="panel">
-<h3>2. Your storyboard</h3>
-<div id="scenes">Your scenes will appear here.</div>
-</div>
+<label>💡 Your video idea / Video fikrin</label>
+<textarea id="idea" rows="4" placeholder="Write your funny story idea..."></textarea>
 
-<div class="panel">
-<h3>3. Video preview</h3>
-<canvas id="video" width="720" height="1280"></canvas>
-<br>
-<button id="create" onclick="createVideo()" disabled>Create 30-second video</button>
-<p id="status">Waiting for your idea...</p >
-<a id="download"></a >
-</div>
+<button onclick="generate()">Generate 6 scenes</button>
+<div id="storyboard"></div>
+
+<h2>🎙️ Voiceover</h2>
+<button onclick="speakAll()">▶ Play voiceover</button>
+<button class="secondary" onclick="stopVoice()">Stop voice</button>
+<small>Voice depends on the voices installed in your browser.</small>
+
+<h2>🎥 Video preview</h2>
+<div id="screen">Your video will appear here</div>
+<button onclick="startVideo()">Create 30-second video</button>
+<button class="secondary" onclick="stopVideo()">Stop video</button>
+<p id="status"></p >
+<a id="download" style="color:#b69aff"></a >
 </main>
 
 <script>
-let story=[];
-const canvas=document.getElementById("video");
+let scenes=[];
+let recorder;
+let chunks=[];
+let timer;
+
+const translations={
+"en-US":[
+"Once upon a time...",
+"Something strange happened!",
+"Nobody expected this.",
+"Everything went wrong!",
+"What happens next?",
+"Subscribe for more!"
+],
+"tr-TR":[
+"Bir zamanlar...",
+"Çok garip bir şey oldu!",
+"Kimse bunu beklemiyordu.",
+"Her şey ters gitti!",
+"Sonra ne oldu?",
+"Daha fazlası için abone ol!"
+],
+"ru-RU":[
+"Однажды...",
+"Случилось нечто странное!",
+"Никто этого не ожидал.",
+"Всё пошло не так!",
+"Что будет дальше?",
+"Подписывайтесь!"
+]
+};
+
+function generate(){
+const idea=document.getElementById("idea").value.trim();
+if(!idea){alert("Write a video idea first!");return;}
+const lang=document.getElementById("language").value;
+const phrases=translations[lang];
+scenes=phrases.map((p,i)=>i===0?idea+" — "+p:p);
+document.getElementById("storyboard").innerHTML=
+"<h2>Your storyboard</h2>"+
+scenes.map((s,i)=>`<div class="scene"><b>Scene ${i+1}</b><p>${escapeHTML(s)}</p ></div>`).join("");
+showScene(0);
+}
+
+function escapeHTML(s){
+return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function speakAll(){
+if(!scenes.length){alert("Generate scenes first!");return;}
+stopVoice();
+const lang=document.getElementById("language").value;
+scenes.forEach((text,i)=>{
+const utterance=new SpeechSynthesisUtterance(text);
+utterance.lang=lang;
+utterance.rate=0.95;
+if(i===0)utterance.onstart=()=>showScene(0);
+utterance.onend=()=>{if(i+1<scenes.length)showScene(i+1);};
+speechSynthesis.speak(utterance);
+});
+}
+
+function stopVoice(){speechSynthesis.cancel();}
+
+function showScene(i){
+document.getElementById("screen").textContent=scenes[i]||"Your video";
+}
+
+function startVideo(){
+if(!scenes.length){alert("Generate scenes first!");return;}
+const canvas=document.createElement("canvas");
+canvas.width=720;canvas.height=1280;
 const ctx=canvas.getContext("2d");
-
-function makeScenes(){
- const idea=document.getElementById("idea").value.trim();
- if(!idea){alert("Enter your idea first!");return}
- const titles=[
- "Something strange is happening...",
- "Nobody expected this.",
- "But suddenly everything changed.",
- "The biggest surprise was coming.",
- "Wait... WHAT?!",
- "You won't believe the ending!"
- ];
- story=titles.map((title,i)=>({
-  title,
-  detail:i===0?idea:"The story gets crazier...",
-  color:i%2===0?"#37205d":"#142d50"
- }));
- document.getElementById("scenes").innerHTML=story.map((s,i)=>
- `<div class="scene"><b>Scene ${i+1}</b><br>${s.title}<br><small>${s.detail}</small></div>`
- ).join("");
- document.getElementById("create").disabled=false;
- document.getElementById("status").textContent="6 scenes ready!";
- draw(0);
+const stream=canvas.captureStream(30);
+chunks=[];
+let index=0;
+function draw(){
+ctx.fillStyle="#111122";ctx.fillRect(0,0,720,1280);
+ctx.fillStyle="#b69aff";ctx.font="bold 34px Arial";
+ctx.fillText("VIRAL AI VIDEO",55,120);
+ctx.fillStyle="white";ctx.font="bold 46px Arial";
+const words=scenes[index].split(" ");
+let line="",y=530;
+for(const word of words){
+let test=line+word+" ";
+if(ctx.measureText(test).width>590){
+ctx.fillText(line,60,y);line=word+" ";y+=65;
+}else line=test;
+}
+ctx.fillText(line,60,y);
+ctx.fillStyle="#b69aff";ctx.font="28px Arial";
+ctx.fillText("Scene "+(index+1)+" / 6",60,1150);
+}
+draw();
+recorder=new MediaRecorder(stream,{mimeType:"video/webm"});
+recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+recorder.onstop=()=>{
+const blob=new Blob(chunks,{type:"video/webm"});
+const url=URL.createObjectURL(blob);
+const a=document.getElementById("download");
+a.href=url;a.download="viral-video.webm";
+a.textContent="⬇ Download your video";
+document.getElementById("status").textContent="Video created!";
+};
+recorder.start();
+timer=setInterval(()=>{
+index++;
+if(index>=scenes.length){stopVideo();return;}
+draw();
+showScene(index);
+},5000);
+document.getElementById("status").textContent="Creating video...";
 }
 
-function draw(index){
- const s=story[index];
- const g=ctx.createLinearGradient(0,0,720,1280);
- g.addColorStop(0,s.color);
- g.addColorStop(1,"#090914");
- ctx.fillStyle=g;
- ctx.fillRect(0,0,720,1280);
- ctx.fillStyle="white";
- ctx.textAlign="center";
- ctx.font="bold 27px Arial";
- ctx.fillText("VIRAL AI STORIES",360,100);
- ctx.font="bold 55px Arial";
- const words=s.title.split(" ");
- let lines=[],line="";
- words.forEach(w=>{
-  if(ctx.measureText(line+" "+w).width>600){
-   lines.push(line);line=w;
-  }else line+=(line?" ":"")+w;
- });
- if(line)lines.push(line);
- lines.forEach((l,i)=>ctx.fillText(l,360,540+i*75));
- ctx.font="25px Arial";
- ctx.fillStyle="#c4b5fd";
- ctx.fillText("SCENE "+(index+1)+" / 6",360,1100);
- ctx.fillStyle="#fff";
- ctx.fillRect(60,1170,600,8);
- ctx.fillStyle="#a78bfa";
- ctx.fillRect(60,1170,600*(index+1)/6,8);
-}
-
-async function createVideo(){
- if(!story.length)return;
- const button=document.getElementById("create");
- button.disabled=true;
- document.getElementById("download").textContent="";
- const stream=canvas.captureStream(30);
- let recorder=new MediaRecorder(stream,{mimeType:"video/webm"});
- let chunks=[];
- recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
- recorder.onstop=()=>{
-  const blob=new Blob(chunks,{type:"video/webm"});
-  const url=URL.createObjectURL(blob);
-  const a=document.getElementById("download");
-  a.href=url;
-  a.download="viral-video.webm";
-  a.textContent="⬇ Download your video";
-  a.style.display="inline-block";
-  a.style.color="#c4b5fd";
-  document.getElementById("status").textContent="Video completed!";
-  button.disabled=false;
-  stream.getTracks().forEach(t=>t.stop());
- };
- recorder.start();
- for(let i=0;i<6;i++){
-  draw(i);
-  document.getElementById("status").textContent="Creating scene "+(i+1)+" of 6...";
-  await new Promise(r=>setTimeout(r,5000));
- }
- recorder.stop();
+function stopVideo(){
+clearInterval(timer);
+if(recorder&&recorder.state==="recording")recorder.stop();
 }
 </script>
 </body>
